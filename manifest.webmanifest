@@ -1,6 +1,6 @@
 {
-  "name": "料理メモ",
-  "short_name": "料理メモ",
+  "name": "レシピどこだっけ？",
+  "short_name": "レシピどこだっけ？",
   "lang": "ja",
   "start_url": "./",
   "scope": "./",

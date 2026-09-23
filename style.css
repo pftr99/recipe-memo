@@ -64,5 +64,9 @@ button { cursor: pointer; }
 .tag-manager-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 8px 8px 8px 14px; border: 1px solid var(--line); border-radius: 12px; background: white; }
 .tag-manager-item button { min-height: 36px; border: 0; border-radius: 9px; padding: 6px 10px; background: #fef2f2; color: var(--danger); font-weight: 700; }
 .notice { margin: 0 0 16px; padding: 11px 13px; border-radius: 10px; background: #ecfdf5; color: #166534; font-size: .9rem; }
+.error-notice { margin: 0 0 16px; padding: 11px 13px; border-radius: 10px; background: #fef2f2; color: #b91c1c; font-size: .9rem; }
+.backup-card { margin: 0 0 16px; padding: 18px; border: 1px solid var(--line); border-radius: 14px; background: white; }
+.backup-card h2 { margin: 0 0 8px; font-size: 1.05rem; }
+.backup-card p { margin: 0 0 16px; color: var(--muted); line-height: 1.6; font-size: .92rem; }
 .bottom-space { height: 8px; }
 @media (min-width: 681px) { .app-shell { padding-left: 24px; padding-right: 24px; } }
