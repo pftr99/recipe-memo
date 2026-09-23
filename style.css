@@ -27,6 +27,13 @@ button { cursor: pointer; }
 .search-wrap span { position: absolute; top: 14px; left: 16px; font-size: 1.25rem; }
 .primary-button, .secondary-button, .danger-button { width: 100%; min-height: 52px; border-radius: 14px; padding: 12px 16px; font-weight: 700; font-size: 1rem; }
 .home-actions { display: grid; gap: 10px; }
+.today-card { margin-top: 28px; padding: 18px; border: 1px solid #fed7aa; border-radius: 14px; background: #fff7ed; }
+.today-card .section-heading { margin-top: 0; }
+.season-picker { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0; }
+.season-choice { min-height: 38px; border: 1px solid #fed7aa; border-radius: 999px; padding: 6px 12px; background: white; color: #9a3412; font-weight: 700; }
+.season-choice.selected { border-color: var(--orange); background: var(--orange); color: white; }
+.today-season { margin-top: 7px; }
+.small-count { margin: 0 0 14px; padding: 10px 12px; border-radius: 10px; background: #ffedd5; color: #9a3412; font-size: .9rem; }
 .primary-button { border: 0; background: var(--orange); color: white; box-shadow: 0 3px 8px #f9731640; }
 .secondary-button { border: 1px solid var(--orange); background: white; color: var(--orange-dark); }
 .danger-button { border: 1px solid #fecaca; background: #fff; color: var(--danger); }

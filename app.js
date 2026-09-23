@@ -4,8 +4,9 @@
   const APP_NAME = 'レシピどこだっけ？';
   const KEYS = { recipes: 'cooking-memo-recipes-v1', tags: 'cooking-memo-tags-v1', locations: 'cooking-memo-locations-v1' };
   const DEFAULT_LOCATIONS = ['YouTube', 'Instagram', 'Xのブックマーク', 'ブックマーク', '画像', 'その他'];
+  const SEASONS = ['春', '夏', '秋', '冬', '通年'];
   const app = document.querySelector('#app');
-  let state = { view: 'home', recipeId: null, search: '', notice: '' };
+  let state = { view: 'home', recipeId: null, search: '', notice: '', season: '通年', todaySeason: '通年', todayRecipeIds: [] };
 
   const read = (key) => {
     try { return JSON.parse(localStorage.getItem(key)) || []; } catch { return []; }
@@ -23,6 +24,7 @@
   };
   const tagPills = (list = []) => list.length ? `<div class="tags">${list.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}</div>` : '';
   const recipeCard = (recipe) => `<button class="recipe-card" data-action="detail" data-id="${recipe.id}"><h3>${escapeHtml(recipe.name)}</h3><div class="meta">保存場所：${escapeHtml(recipe.location)}</div>${tagPills(recipe.tags)}</button>`;
+  const todayRecipeCard = (recipe) => `<button class="recipe-card" data-action="detail" data-id="${recipe.id}"><h3>${escapeHtml(recipe.name)}</h3><div class="meta">保存場所：${escapeHtml(recipe.location)}</div><div class="meta today-season">季節：${escapeHtml(recipe.season || '未設定')}</div>${tagPills(recipe.tags)}</button>`;
   const header = (title, back = true, right = '') => `<header class="topbar">${back ? '<button class="back-button" data-action="home">‹ 戻る</button>' : `<h1>${APP_NAME}</h1>`}<h1${back ? '' : ' class="visually-hidden"'}>${back ? escapeHtml(title) : ''}</h1>${right}</header>`;
   const notice = () => state.error ? `<p class="error-notice">${escapeHtml(state.error)}</p>` : (state.notice ? `<p class="notice">${escapeHtml(state.notice)}</p>` : '');
 
@@ -37,6 +39,7 @@
       <div class="home-actions"><button class="primary-button" data-action="new-recipe">＋ 料理を登録</button><button class="secondary-button" data-action="all-recipes">登録した料理</button></div>
       <section><div class="section-heading"><h2>${state.search ? '検索結果' : '最近登録した料理'}</h2>${state.search ? `<span class="meta">${displayed.length}件</span>` : ''}</div>
       <div id="results" class="recipe-list">${displayed.length ? displayed.map(recipeCard).join('') : `<div class="empty">${state.search ? '該当する料理が見つかりませんでした。' : 'まだ料理メモがありません。<br>「＋ 料理を登録」から始めましょう。'}</div>`}</div></section>
+      <section class="today-card"><div class="section-heading"><h2>今日なに作る？</h2></div><p class="meta">季節を選んで、今日の候補を3品選びます。</p><div class="season-picker">${SEASONS.map(season => `<button class="season-choice ${season === (state.season || '通年') ? 'selected' : ''}" data-action="select-season" data-season="${season}">${season}</button>`).join('')}</div><button class="primary-button" data-action="pick-today">今日なに作る？</button></section>
       <section><div class="section-heading"><h2>データ・設定</h2></div><div class="home-actions"><button class="secondary-button" data-action="manage-locations">保存場所の管理</button><button class="secondary-button" data-action="backup">バックアップ・復元</button></div></section>`;
     const search = document.querySelector('#search');
     const refreshSearchResults = (input) => {
@@ -66,13 +69,15 @@
   }
 
   function renderForm(editing = null) {
-    const recipe = editing || { name: '', location: locations()[0] || '', link: '', notes: '', tags: [] };
+    const recipe = editing || { name: '', location: locations()[0] || '', link: '', notes: '', tags: [], season: '通年' };
     const selected = new Set(recipe.tags || []);
     const locationOptions = [...locations()];
+    const selectedSeason = SEASONS.includes(recipe.season) ? recipe.season : '';
     if (recipe.location && !locationOptions.includes(recipe.location)) locationOptions.push(recipe.location);
     app.innerHTML = `${header(editing ? '料理を編集' : '料理を登録')}${notice()}<form id="recipe-form" class="form">
       <div class="field"><label for="name">料理名 <span class="required">必須</span></label><input id="name" name="name" required maxlength="100" value="${escapeHtml(recipe.name)}" placeholder="例：鶏肉とキャベツの炒め物" /></div>
       <div class="field"><label for="location">保存場所 <span class="required">必須</span></label><select id="location" name="location" required>${locationOptions.length ? locationOptions.map(x => `<option ${x === recipe.location ? 'selected' : ''}>${escapeHtml(x)}</option>`).join('') : '<option value="" selected disabled>保存場所を追加してください</option>'}</select><span class="meta">候補は「保存場所の管理」から変更できます。</span></div>
+      <div class="field"><label for="season">季節</label><select id="season" name="season"><option value="" ${selectedSeason ? '' : 'selected'}>未設定</option>${SEASONS.map(season => `<option value="${season}" ${season === selectedSeason ? 'selected' : ''}>${season}</option>`).join('')}</select></div>
       <div class="field"><label for="link">リンク</label><input id="link" name="link" type="url" inputmode="url" value="${escapeHtml(recipe.link)}" placeholder="https://..." /></div>
       <div class="field"><label for="notes">備考</label><textarea id="notes" name="notes" maxlength="1000" placeholder="気になったポイントなどをメモできます">${escapeHtml(recipe.notes)}</textarea></div>
       <div class="field"><label>タグ</label><div class="tag-picker" id="tag-picker">${tags().map(tag => `<button type="button" class="tag-choice ${selected.has(tag) ? 'selected' : ''}" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`).join('')}</div>
@@ -81,7 +86,7 @@
     document.querySelector('#recipe-form').addEventListener('submit', event => {
       event.preventDefault();
       const form = new FormData(event.currentTarget);
-      const data = { id: recipe.id || uid(), name: form.get('name').trim(), location: form.get('location'), link: form.get('link').trim(), notes: form.get('notes').trim(), tags: [...document.querySelectorAll('.tag-choice.selected')].map(x => x.dataset.tag), updatedAt: Date.now() };
+      const data = { id: recipe.id || uid(), name: form.get('name').trim(), location: form.get('location'), link: form.get('link').trim(), notes: form.get('notes').trim(), tags: [...document.querySelectorAll('.tag-choice.selected')].map(x => x.dataset.tag), season: form.get('season') || '', updatedAt: Date.now() };
       const all = recipes(); const index = all.findIndex(item => item.id === data.id);
       if (index === -1) all.push(data); else all[index] = data;
       saveRecipes(all); state = { view: 'detail', recipeId: data.id, search: '', notice: '保存しました。' }; render();
@@ -94,11 +99,51 @@
       <div class="recipe-list">${all.length ? all.map(recipeCard).join('') : '<div class="empty">まだ料理が登録されていません</div>'}</div></section>`;
   }
 
+  function todayCandidates(season) {
+    return recipes().filter(recipe => season === '通年' ? recipe.season === '通年' : (recipe.season === season || recipe.season === '通年'));
+  }
+
+  function shuffled(items) {
+    const copy = [...items];
+    for (let index = copy.length - 1; index > 0; index -= 1) {
+      const other = Math.floor(Math.random() * (index + 1));
+      [copy[index], copy[other]] = [copy[other], copy[index]];
+    }
+    return copy;
+  }
+
+  function chooseToday(season, previousIds = []) {
+    const candidates = todayCandidates(season);
+    let selected = shuffled(candidates).slice(0, 3);
+    if (candidates.length > 3) {
+      for (let attempts = 0; attempts < 8 && selected.map(recipe => recipe.id).sort().join('|') === [...previousIds].sort().join('|'); attempts += 1) selected = shuffled(candidates).slice(0, 3);
+      if (selected.map(recipe => recipe.id).sort().join('|') === [...previousIds].sort().join('|')) {
+        const replacement = candidates.find(recipe => !previousIds.includes(recipe.id));
+        const retained = previousIds.slice(0, 2).map(id => candidates.find(recipe => recipe.id === id)).filter(Boolean);
+        if (replacement && retained.length === 2) selected = [...retained, replacement];
+      }
+    }
+    state = { view: 'today', recipeId: null, search: '', notice: '', season, todaySeason: season, todayRecipeIds: selected.map(recipe => recipe.id) };
+    render();
+  }
+
+  function renderToday() {
+    const season = state.todaySeason || '通年';
+    const recipesById = new Map(recipes().map(recipe => [recipe.id, recipe]));
+    const selected = state.todayRecipeIds.map(id => recipesById.get(id)).filter(Boolean);
+    const count = todayCandidates(season).length;
+    app.innerHTML = `${header('今日なに作る？')}${notice()}<section class="today-card"><p class="meta">${escapeHtml(season)}の料理から選びました。${season !== '通年' ? '（通年の料理を含みます）' : ''}</p>
+      ${count < 3 ? `<p class="small-count">この条件の料理は${count}件しか登録されていません。</p>` : ''}
+      <div class="recipe-list">${selected.length ? selected.map(todayRecipeCard).join('') : '<div class="empty">この条件に合う料理はまだ登録されていません。</div>'}</div>
+      <div class="actions"><button class="primary-button" data-action="repick-today">もう一度選ぶ</button></div></section>`;
+  }
+
   function renderDetail(recipe) {
     if (!recipe) { state = { view: 'home', recipeId: null, search: '', notice: '料理が見つかりませんでした。' }; return render(); }
     const link = safeLink(recipe.link);
     app.innerHTML = `${header('料理の詳細')}${notice()}<article class="detail-card"><h2>${escapeHtml(recipe.name)}</h2>
       <div class="detail-row"><span class="detail-label">保存場所</span><span class="detail-value">${escapeHtml(recipe.location)}</span></div>
+      <div class="detail-row"><span class="detail-label">季節</span><span class="detail-value">${escapeHtml(recipe.season || '未設定')}</span></div>
       <div class="detail-row"><span class="detail-label">リンク</span><span class="detail-value">${link ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener">${escapeHtml(link)}</a>` : '未登録'}</span></div>
       <div class="detail-row"><span class="detail-label">備考</span><span class="detail-value">${recipe.notes ? escapeHtml(recipe.notes).replace(/\n/g, '<br>') : '未登録'}</span></div>
       <div class="detail-row"><span class="detail-label">タグ</span>${tagPills(recipe.tags)}</div></article>
@@ -152,7 +197,7 @@
     const validRecipes = data.recipes.every(recipe => recipe && typeof recipe === 'object' && typeof recipe.name === 'string' && typeof recipe.location === 'string' && Array.isArray(recipe.tags));
     if (!validRecipes) throw new Error('料理データの形式が正しくありません。');
     return {
-      recipes: data.recipes.map(recipe => ({ ...recipe, id: String(recipe.id || uid()), name: recipe.name.trim(), location: recipe.location.trim(), link: typeof recipe.link === 'string' ? recipe.link : '', notes: typeof recipe.notes === 'string' ? recipe.notes : '', tags: normalizedList(recipe.tags), updatedAt: Number(recipe.updatedAt) || Date.now() })),
+      recipes: data.recipes.map(recipe => ({ ...recipe, id: String(recipe.id || uid()), name: recipe.name.trim(), location: recipe.location.trim(), link: typeof recipe.link === 'string' ? recipe.link : '', notes: typeof recipe.notes === 'string' ? recipe.notes : '', tags: normalizedList(recipe.tags), season: SEASONS.includes(recipe.season) ? recipe.season : '', updatedAt: Number(recipe.updatedAt) || Date.now() })),
       tags: normalizedList(data.tags),
       locations: normalizedList(data.locations)
     };
@@ -182,6 +227,7 @@
     state.notice = state.notice || '';
     if (state.view === 'home') return renderHome();
     if (state.view === 'all-recipes') return renderAllRecipes();
+    if (state.view === 'today') return renderToday();
     if (state.view === 'form') return renderForm();
     if (state.view === 'edit') return renderForm(recipes().find(item => item.id === state.recipeId));
     if (state.view === 'detail') return renderDetail(recipes().find(item => item.id === state.recipeId));
@@ -221,6 +267,9 @@
     if (action === 'home') { state = { view: 'home', recipeId: null, search: '', notice: '' }; render(); }
     if (action === 'new-recipe') { state = { view: 'form', recipeId: null, search: '', notice: '' }; render(); }
     if (action === 'all-recipes') { state = { view: 'all-recipes', recipeId: null, search: '', notice: '' }; render(); }
+    if (action === 'select-season') { state.season = target.dataset.season; renderHome(); }
+    if (action === 'pick-today') chooseToday(state.season || '通年');
+    if (action === 'repick-today') chooseToday(state.todaySeason || '通年', state.todayRecipeIds || []);
     if (action === 'manage-tags') { state = { view: 'tags', recipeId: null, search: '', notice: '' }; render(); }
     if (action === 'manage-locations') { state = { view: 'locations', recipeId: null, search: '', notice: '' }; render(); }
     if (action === 'backup') { state = { view: 'backup', recipeId: null, search: '', notice: '' }; render(); }
