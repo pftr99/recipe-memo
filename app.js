@@ -35,7 +35,15 @@
       <section><div class="section-heading"><h2>${state.search ? '検索結果' : '最近登録した料理'}</h2>${state.search ? `<span class="meta">${displayed.length}件</span>` : ''}</div>
       <div id="results" class="recipe-list">${displayed.length ? displayed.map(recipeCard).join('') : `<div class="empty">${state.search ? '該当する料理が見つかりませんでした。' : 'まだ料理メモがありません。<br>「＋ 料理を登録」から始めましょう。'}</div>`}</div></section>`;
     const search = document.querySelector('#search');
-    search.addEventListener('input', (event) => { state.search = event.target.value; renderHome(); document.querySelector('#search').focus(); });
+    search.addEventListener('input', (event) => {
+      state.search = event.target.value;
+      const selectionStart = event.target.selectionStart;
+      const selectionEnd = event.target.selectionEnd;
+      renderHome();
+      const refreshedSearch = document.querySelector('#search');
+      refreshedSearch.focus();
+      refreshedSearch.setSelectionRange(selectionStart, selectionEnd);
+    });
   }
 
   function renderForm(editing = null) {
