@@ -31,7 +31,7 @@
     const displayed = state.search ? sorted : sorted.slice(0, 8);
     app.innerHTML = `<header class="topbar"><h1>料理メモ</h1><button class="icon-button" data-action="manage-tags">タグ管理</button></header>
       ${notice()}<div class="search-wrap"><span>⌕</span><input id="search" type="search" autocomplete="off" placeholder="料理名・タグ・保存場所で検索" value="${escapeHtml(state.search)}" /></div>
-      <button class="primary-button" data-action="new-recipe">＋ 料理を登録</button>
+      <div class="home-actions"><button class="primary-button" data-action="new-recipe">＋ 料理を登録</button><button class="secondary-button" data-action="all-recipes">登録した料理</button></div>
       <section><div class="section-heading"><h2>${state.search ? '検索結果' : '最近登録した料理'}</h2>${state.search ? `<span class="meta">${displayed.length}件</span>` : ''}</div>
       <div id="results" class="recipe-list">${displayed.length ? displayed.map(recipeCard).join('') : `<div class="empty">${state.search ? '該当する料理が見つかりませんでした。' : 'まだ料理メモがありません。<br>「＋ 料理を登録」から始めましょう。'}</div>`}</div></section>`;
     const search = document.querySelector('#search');
@@ -82,6 +82,12 @@
     });
   }
 
+  function renderAllRecipes() {
+    const all = [...recipes()].sort((a, b) => b.updatedAt - a.updatedAt);
+    app.innerHTML = `${header('登録した料理')}${notice()}<section><div class="section-heading"><h2>すべての料理</h2><span class="meta">${all.length}件</span></div>
+      <div class="recipe-list">${all.length ? all.map(recipeCard).join('') : '<div class="empty">まだ料理が登録されていません</div>'}</div></section>`;
+  }
+
   function renderDetail(recipe) {
     if (!recipe) { state = { view: 'home', recipeId: null, search: '', notice: '料理が見つかりませんでした。' }; return render(); }
     const link = safeLink(recipe.link);
@@ -103,6 +109,7 @@
   function render() {
     state.notice = state.notice || '';
     if (state.view === 'home') return renderHome();
+    if (state.view === 'all-recipes') return renderAllRecipes();
     if (state.view === 'form') return renderForm();
     if (state.view === 'edit') return renderForm(recipes().find(item => item.id === state.recipeId));
     if (state.view === 'detail') return renderDetail(recipes().find(item => item.id === state.recipeId));
@@ -130,6 +137,7 @@
     const action = target.dataset.action;
     if (action === 'home') { state = { view: 'home', recipeId: null, search: '', notice: '' }; render(); }
     if (action === 'new-recipe') { state = { view: 'form', recipeId: null, search: '', notice: '' }; render(); }
+    if (action === 'all-recipes') { state = { view: 'all-recipes', recipeId: null, search: '', notice: '' }; render(); }
     if (action === 'manage-tags') { state = { view: 'tags', recipeId: null, search: '', notice: '' }; render(); }
     if (action === 'detail') { state = { view: 'detail', recipeId: target.dataset.id, search: '', notice: '' }; render(); }
     if (action === 'edit') { state = { view: 'edit', recipeId: target.dataset.id, search: '', notice: '' }; render(); }

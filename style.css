@@ -26,6 +26,7 @@ button { cursor: pointer; }
 .search-wrap input { width: 100%; min-height: 54px; padding: 0 16px 0 45px; border: 1px solid var(--line); border-radius: 14px; background: white; outline-color: var(--orange); font-size: 1rem; }
 .search-wrap span { position: absolute; top: 14px; left: 16px; font-size: 1.25rem; }
 .primary-button, .secondary-button, .danger-button { width: 100%; min-height: 52px; border-radius: 14px; padding: 12px 16px; font-weight: 700; font-size: 1rem; }
+.home-actions { display: grid; gap: 10px; }
 .primary-button { border: 0; background: var(--orange); color: white; box-shadow: 0 3px 8px #f9731640; }
 .secondary-button { border: 1px solid var(--orange); background: white; color: var(--orange-dark); }
 .danger-button { border: 1px solid #fecaca; background: #fff; color: var(--danger); }
