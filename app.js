@@ -35,14 +35,29 @@
       <section><div class="section-heading"><h2>${state.search ? '検索結果' : '最近登録した料理'}</h2>${state.search ? `<span class="meta">${displayed.length}件</span>` : ''}</div>
       <div id="results" class="recipe-list">${displayed.length ? displayed.map(recipeCard).join('') : `<div class="empty">${state.search ? '該当する料理が見つかりませんでした。' : 'まだ料理メモがありません。<br>「＋ 料理を登録」から始めましょう。'}</div>`}</div></section>`;
     const search = document.querySelector('#search');
-    search.addEventListener('input', (event) => {
-      state.search = event.target.value;
-      const selectionStart = event.target.selectionStart;
-      const selectionEnd = event.target.selectionEnd;
+    const refreshSearchResults = (input) => {
+      const selectionStart = input.selectionStart;
+      const selectionEnd = input.selectionEnd;
       renderHome();
       const refreshedSearch = document.querySelector('#search');
       refreshedSearch.focus();
       refreshedSearch.setSelectionRange(selectionStart, selectionEnd);
+    };
+    search.addEventListener('input', (event) => {
+      state.search = event.target.value;
+      // 日本語IMEなどの変換中は、input要素を再描画しない。
+      // 再描画すると変換中の文字列が確定・取消されてしまうため。
+      if (event.isComposing) return;
+      refreshSearchResults(event.target);
+    });
+    search.addEventListener('compositionend', (event) => {
+      state.search = event.target.value;
+      const completedInput = event.target;
+      // 多くのブラウザは直後に isComposing: false の input を発火する。
+      // それを優先し、発火しない環境だけ次フレームで検索結果を更新する。
+      requestAnimationFrame(() => {
+        if (document.querySelector('#search') === completedInput) refreshSearchResults(completedInput);
+      });
     });
   }
 
